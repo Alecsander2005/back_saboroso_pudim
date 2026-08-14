@@ -1,0 +1,50 @@
+from django.contrib import admin
+
+from .models import Product, ProductSize
+
+
+class ProductSizeInline(admin.TabularInline):
+    model = ProductSize
+    extra = 1
+
+
+@admin.register(Product)
+class ProductAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "name",
+        "is_active",
+    )
+
+    list_filter = (
+        "is_active",
+    )
+
+    search_fields = (
+        "name",
+        "description",
+    )
+
+    inlines = [
+        ProductSizeInline,
+    ]
+
+
+@admin.register(ProductSize)
+class ProductSizeAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "product",
+        "name",
+        "price",
+        "is_active",
+    )
+
+    list_filter = (
+        "is_active",
+    )
+
+    search_fields = (
+        "product__name",
+        "name",
+    )
