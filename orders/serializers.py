@@ -1,29 +1,47 @@
 from decimal import Decimal
+from store.models import StoreSettings
 
-from rest_framework import serializers
 from django.db import transaction
+from rest_framework import serializers
 
 from products.models import Product, ProductSize
 
 from .models import Order, OrderItem
 
+
 class OrderItemSerializer(serializers.ModelSerializer):
+    subtotal = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        read_only=True
+    )
+
     class Meta:
         model = OrderItem
         fields = [
             "id",
             "product",
             "product_name",
-            "size_name",
+            "size",
             "quantity",
-            "unit_price",
-            "subtotal"
+            "price",
+            "subtotal",
+            "created_at",
         ]
-    
+
+        read_only_fields = [
+            "id",
+            "product_name",
+            "price",
+            "subtotal",
+            "created_at",
+        ]
+
+
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(
-        many = True,
-        read_only = True
+        many=True,
+        read_only=True
     )
 
     class Meta:
@@ -33,96 +51,170 @@ class OrderSerializer(serializers.ModelSerializer):
             "customer_name",
             "customer_email",
             "customer_whatsapp",
-            "delivery_method",
             "delivery_date",
+            "delivery_method",
             "address",
-            "status",
+            "address_rua",
+            "address_bairro",
+            "address_numero",
+            "address_complemento",
+            "address_referencia",
+            "delivery_fee",
             "total",
+            "status",
             "items",
             "created_at",
-            "updated_at"
+            "updated_at",
         ]
 
-class OrderCreateItemSerializer(serializers.Serializer):
-    product_id = serializers.IntegerField()
-    size_id = serializers.IntegerField()
-    quantity = serializers.IntegerField(min_value = 1)
+        read_only_fields = [
+            "id",
+            "delivery_fee",
+            "total",
+            "status",
+            "items",
+            "created_at",
+            "updated_at",
+        ]
 
-class OrderCreateSerializer(serializers.Serializer):
-    items = OrderCreateItemSerializer(
-        many = True,
-        write_only = True
-        )
+
+class OrderItemCreateSerializer(serializers.Serializer):
+    product_id = serializers.IntegerField()
+
+    size_id = serializers.IntegerField()
+
+    quantity = serializers.IntegerField(
+        min_value=1
+    )
+
+
+class OrderCreateSerializer(serializers.ModelSerializer):
+    items = OrderItemCreateSerializer(
+        many=True
+    )
 
     class Meta:
         model = Order
-        fileds =[
+        fields = [
             "customer_name",
             "customer_email",
             "customer_whatsapp",
-            "delivery_method",
             "delivery_date",
+            "delivery_method",
             "address",
+            "address_rua",
+            "address_bairro",
+            "address_numero",
+            "address_complemento",
+            "address_referencia",
             "items",
         ]
 
+    def validate(self, attrs):
+        delivery_method = attrs.get(
+            "delivery_method"
+        )
+
+        if delivery_method == "entrega":
+            if not attrs.get("address_rua"):
+                raise serializers.ValidationError({
+                    "address_rua": (
+                        "Informe a rua para pedidos "
+                        "com entrega."
+                    )
+                })
+
+            if not attrs.get("address_numero"):
+                raise serializers.ValidationError({
+                    "address_numero": (
+                        "Informe o número para pedidos "
+                        "com entrega."
+                    )
+                })
+
+        return attrs
+
     @transaction.atomic
     def create(self, validated_data):
-        items_data = validated_data.pop("items")
+        items_data = validated_data.pop(
+            "items"
+        )
 
         order = Order.objects.create(
-            **validated_data,
-            total = Decimal ("0.00")
+            **validated_data
         )
 
         total = Decimal("0.00")
 
         for item_data in items_data:
-            product_id = item_data["product_id"]
-            size_id = item_data["size_id"]
-            quantity = item_data["quantity"]
+            product_id = item_data[
+                "product_id"
+            ]
+
+            size_id = item_data[
+                "size_id"
+            ]
+
+            quantity = item_data[
+                "quantity"
+            ]
 
             try:
                 product = Product.objects.get(
                     id=product_id,
-                    is_active=True,
+                    is_active=True
                 )
             except Product.DoesNotExist:
-                raise serializers.ValidationError(
-                    f"Produto {product_id} não encontrado."
-                )
+                raise serializers.ValidationError({
+                    "items": (
+                        f"Produto {product_id} "
+                        "não encontrado."
+                    )
+                })
 
             try:
                 size = ProductSize.objects.get(
                     id=size_id,
                     product=product,
-                    is_active=True,
+                    is_active=True
                 )
             except ProductSize.DoesNotExist:
-                raise serializers.ValidationError(
-                    f"Tamanho {size_id} não encontrado para o produto."
-                )
+                raise serializers.ValidationError({
+                    "items": (
+                        f"Tamanho {size_id} "
+                        "não encontrado para o "
+                        f"produto {product_id}."
+                    )
+                })
 
-            unit_price = size.price
-            subtotal = unit_price * quantity
-
-            OrderItem.objects.create(
+            item = OrderItem.objects.create(
                 order=order,
                 product=product,
-                product_name = product.name,
-                size_name=size.name,
+                product_name=product.name,
+                size=size.label,
                 quantity=quantity,
-                unit_price=unit_price,
-                subtotal=subtotal
+                price=size.price,
             )
 
-            total += subtotal
+            total += item.subtotal
 
-            order.total = total
+        delivery_fee = Decimal("0.00")
 
-            order.save(
-                update_fields=["total", "updated_at"]
-            )
+        if order.delivery_method == "entrega":
+            settings = StoreSettings.objects.first()
 
-            return order
+            if settings:
+                delivery_fee = settings.taxa_entrega
 
+        total += delivery_fee
+
+
+        order.total = total
+        order.save(
+            update_fields=[
+                "total",
+                "updated_at",
+            ]
+        )
+
+        return order

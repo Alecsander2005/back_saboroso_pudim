@@ -29,7 +29,7 @@ class ProductSize(models.Model):
         related_name="sizes"
     )
 
-    name = models.CharField(max_length=100)
+    label = models.CharField(max_length=100)
 
 
     price = models.DecimalField(

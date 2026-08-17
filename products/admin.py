@@ -35,7 +35,7 @@ class ProductSizeAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "product",
-        "name",
+        "label",
         "price",
         "is_active",
     )
@@ -46,5 +46,5 @@ class ProductSizeAdmin(admin.ModelAdmin):
 
     search_fields = (
         "product__name",
-        "name",
+        "label",
     )

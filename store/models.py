@@ -2,45 +2,37 @@ from django.db import models
 
 
 class StoreSettings(models.Model):
-    store_name = models.CharField(
+    loja_nome = models.CharField(
         max_length=255,
-        default= "Saboroso Pudim"
-        )
-
-    description = models.TextField(
-        blank = True
-    )
-
-    whatsapp = models.CharField(
-        max_length=30,
-        blank=True
+        default="Saboroso Pudim"
     )
 
     email = models.EmailField(
         blank=True
     )
 
-    address = models.TextField(
-        blank = True
+    telefone = models.CharField(
+        max_length=30,
+        blank=True
     )
 
-    logo = models.ImageField(
-        upload_to= "store/",
-        blank= True,
-        null = True,
-
+    endereco = models.TextField(
+        blank=True
     )
 
-    is_open = models.BooleanField(
-        default = True
+    taxa_entrega = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0
     )
 
-    created_at = models.DateTimeField(
-        auto_now_add=True
+    tempo_entrega = models.PositiveIntegerField(
+        default=60,
+        help_text="Tempo estimado de entrega em minutos."
     )
 
     updated_at = models.DateTimeField(
-        auto_now = True
+        auto_now=True
     )
 
     class Meta:
@@ -48,8 +40,4 @@ class StoreSettings(models.Model):
         verbose_name_plural = "Configurações da loja"
 
     def __str__(self):
-        return self.store_name
-
-    def save(self,*args, **kwargs):
-        self.pk = 1
-        super().save(*args, **kwargs)
+        return self.loja_nome

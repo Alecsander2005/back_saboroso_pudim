@@ -3,18 +3,23 @@ from rest_framework import serializers
 from .models import StoreSettings
 
 
-class StoreSettingsSerializer(serializers.ModelSerializer):
+class StoreSettingsSerializer(
+    serializers.ModelSerializer
+):
     class Meta:
         model = StoreSettings
         fields = [
             "id",
-            "store_name",
-            "description",
-            "whatsapp",
+            "loja_nome",
             "email",
-            "address",
-            "logo",
-            "is_open",
-            "created_at",
+            "telefone",
+            "endereco",
+            "taxa_entrega",
+            "tempo_entrega",
+            "updated_at",
+        ]
+
+        read_only_fields = [
+            "id",
             "updated_at",
         ]

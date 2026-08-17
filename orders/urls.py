@@ -8,7 +8,7 @@ router = DefaultRouter()
 router.register(
     "orders",
     OrderViewSet,
-    basename="orders",
+    basename="orders"
 )
 
 urlpatterns = router.urls

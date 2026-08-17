@@ -8,7 +8,7 @@ router = DefaultRouter()
 router.register(
     "settings",
     StoreSettingsViewSet,
-    basename="store-settings",
+    basename="store-settings"
 )
 
 urlpatterns = router.urls

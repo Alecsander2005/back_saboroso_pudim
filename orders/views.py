@@ -29,7 +29,12 @@ class OrderViewSet(viewsets.ModelViewSet):
             permissions.IsAdminUser()
         ]
 
-    def create(self, request, *args, **kwargs):
+    def create(
+        self,
+        request,
+        *args,
+        **kwargs
+    ):
         serializer = self.get_serializer(
             data=request.data
         )
@@ -46,5 +51,5 @@ class OrderViewSet(viewsets.ModelViewSet):
 
         return Response(
             response_serializer.data,
-            status=status.HTTP_201_CREATED,
+            status=status.HTTP_201_CREATED
         )

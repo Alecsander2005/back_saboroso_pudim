@@ -9,10 +9,10 @@ class OrderItemInline(admin.TabularInline):
 
     readonly_fields = (
         "product_name",
-        "size_name",
-        "quantity",
-        "unit_price",
+        "size",
+        "price",
         "subtotal",
+        "created_at",
     )
 
 
@@ -23,6 +23,7 @@ class OrderAdmin(admin.ModelAdmin):
         "customer_name",
         "customer_whatsapp",
         "delivery_method",
+        "delivery_date",
         "status",
         "total",
         "created_at",
@@ -31,6 +32,7 @@ class OrderAdmin(admin.ModelAdmin):
     list_filter = (
         "status",
         "delivery_method",
+        "delivery_date",
     )
 
     search_fields = (
@@ -56,13 +58,18 @@ class OrderItemAdmin(admin.ModelAdmin):
         "id",
         "order",
         "product_name",
-        "size_name",
+        "size",
         "quantity",
-        "unit_price",
+        "price",
         "subtotal",
     )
 
     search_fields = (
         "product_name",
         "order__customer_name",
+    )
+
+    readonly_fields = (
+        "subtotal",
+        "created_at",
     )

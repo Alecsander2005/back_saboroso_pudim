@@ -1,21 +1,129 @@
-from django.contrib.auth.models import User
+from django.contrib.auth import authenticate
 from rest_framework import serializers
 
+from .models import User
 
-class UserSerializer(serializers.ModelSerializer):
+
+class UserSerializer(
+    serializers.ModelSerializer
+):
     class Meta:
         model = User
+
         fields = [
             "id",
-            "username",
             "email",
-            "first_name",
-            "last_name",
-            "is_staff",
-            "is_superuser",
+            "nome_completo",
+            "telefone",
+            "tipo_usuario",
+            "is_active",
+            "date_joined",
         ]
+
         read_only_fields = [
             "id",
-            "is_staff",
-            "is_superuser",
+            "tipo_usuario",
+            "is_active",
+            "date_joined",
         ]
+
+
+class RegisterSerializer(
+    serializers.ModelSerializer
+):
+    password = serializers.CharField(
+        write_only=True,
+        min_length=6
+    )
+
+    password_confirm = serializers.CharField(
+        write_only=True
+    )
+
+    class Meta:
+        model = User
+
+        fields = [
+            "email",
+            "nome_completo",
+            "telefone",
+            "password",
+            "password_confirm",
+        ]
+
+    def validate_email(self, value):
+        value = value.lower().strip()
+
+        if User.objects.filter(
+            email=value
+        ).exists():
+            raise serializers.ValidationError(
+                "Este e-mail já está cadastrado."
+            )
+
+        return value
+
+    def validate(self, attrs):
+        if attrs["password"] != attrs[
+            "password_confirm"
+        ]:
+            raise serializers.ValidationError({
+                "password_confirm": (
+                    "As senhas não coincidem."
+                )
+            })
+
+        return attrs
+
+    def create(self, validated_data):
+        validated_data.pop(
+            "password_confirm"
+        )
+
+        password = validated_data.pop(
+            "password"
+        )
+
+        user = User.objects.create_user(
+            password=password,
+            **validated_data
+        )
+
+        return user
+
+
+class LoginSerializer(
+    serializers.Serializer
+):
+    email = serializers.EmailField()
+    password = serializers.CharField(
+        write_only=True
+    )
+
+    def validate(self, attrs):
+        email = attrs[
+            "email"
+        ].lower().strip()
+
+        password = attrs[
+            "password"
+        ]
+
+        user = authenticate(
+            email=email,
+            password=password
+        )
+
+        if not user:
+            raise serializers.ValidationError(
+                "E-mail ou senha inválidos."
+            )
+
+        if not user.is_active:
+            raise serializers.ValidationError(
+                "Este usuário está desativado."
+            )
+
+        attrs["user"] = user
+
+        return attrs
