@@ -11,6 +11,7 @@ from .serializers import (
     LoginSerializer,
     RegisterSerializer,
     UserSerializer,
+    LogoutSerializer,
 )
 
 
@@ -79,3 +80,31 @@ class MeView(
 
     def get_object(self):
         return self.request.user
+
+class LogoutView(APIView):
+    permission_classes = [
+        permissions.IsAuthenticated
+    ]
+
+    def post(self,request):
+        serializer = LogoutSerializer(
+            data = request.data
+        )
+
+        serializer.is_valid(
+            raise_exception = True
+        )
+
+        serializer.save()
+
+        return Response({
+            "detail":(
+                "Logout realizado"
+                "com sucesso."
+            )
+        },
+        status=status.HTTP_200_OK
+        )
+
+
+        

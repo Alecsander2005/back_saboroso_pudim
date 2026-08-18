@@ -1,4 +1,5 @@
 from rest_framework import permissions, viewsets
+from users.permissions import IsAdminUserType
 
 from .models import StoreSettings
 from .serializers import StoreSettingsSerializer
@@ -21,5 +22,5 @@ class StoreSettingsViewSet(
             ]
 
         return [
-            permissions.IsAdminUser()
+                IsAdminUserType()
         ]

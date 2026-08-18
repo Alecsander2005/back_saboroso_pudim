@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 
 
 class Order(models.Model):
@@ -8,12 +9,51 @@ class Order(models.Model):
         ("pronto", "Pronto"),
         ("entregue", "Entregue"),
         ("cancelado", "Cancelado"),
+        ("saiu_entrega", "saiu para entrega"),
+        ("pronto", "pronto para retirada"),
     ]
 
     DELIVERY_METHOD_CHOICES = [
         ("entrega", "Entrega"),
         ("retirada", "Retirada"),
     ]
+
+    STATUS_FLOW = {
+    "pendente": [
+        "confirmado",
+        "cancelado",
+    ],
+
+    "confirmado": [
+        "preparando",
+        "cancelado",
+    ],
+
+    "preparando": [
+        "saiu_entrega",
+        "pronto",
+        "cancelado",
+    ],
+
+    "saiu_entrega": [
+        "entregue",
+    ],
+
+    "pronto": [
+        "entregue",
+    ],
+
+    "entregue": [],
+
+    "cancelado": [],
+}
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete = models.CASCADE,
+        null = True,
+        blank = True
+        )
 
     customer_name = models.CharField(
         max_length=255

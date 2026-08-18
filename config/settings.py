@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     "rest_framework",
+    "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
 
     "products",
@@ -161,3 +162,5 @@ SIMPLE_JWT = {
         "Bearer",
     ),
 }
+
+AUTH_USER_MODEL = "users.User"
