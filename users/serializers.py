@@ -18,6 +18,8 @@ class UserSerializer(
             "telefone",
             "tipo_usuario",
             "is_active",
+            "is_staff",
+            "is_superuser",
             "date_joined",
         ]
 
@@ -25,6 +27,8 @@ class UserSerializer(
             "id",
             "tipo_usuario",
             "is_active",
+            "is_staff",
+            "is_superuser",
             "date_joined",
         ]
 

@@ -2,15 +2,19 @@ from rest_framework import (
     permissions,
     viewsets,
 )
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 from users.permissions import IsAdminUserType
 
-from .models import Order
+from .models import Order, OrderStatusHistory
 from .serializers import (
     OrderCreateSerializer,
     OrderSerializer,
-    OrderAdminUpdateSerializer
-)
+    OrderAdminUpdateSerializer,
+    OrderStatusHistorySerializer,
+    OrderStatusUpdateSerializer
+)  
 
 
 class OrderViewSet(
@@ -19,7 +23,7 @@ class OrderViewSet(
 
     queryset = (
         Order.objects
-        .prefetch_related("items")
+        .prefetch_related("items", "status_history")
         .select_related("user")
     )
 
@@ -74,4 +78,91 @@ class OrderViewSet(
     ):
         serializer.save(
             user=self.request.user
+        )
+    
+    @action( detail = True, methods= ["patch"], url_path = "status")
+    def update_status(self,request,pk=None):
+        order = self.get_object()
+
+        serializer = OrderStatusUpdateSerializer(
+            data = request.data,
+            context= {
+                "order": order
+            }
+        )
+
+        serializer.is_valid(
+            raise_exception = True
+        )
+
+        new_status = serializer.Validated_data[
+            "status"
+        ]
+
+        order.statuis = new_status
+
+        order.save(
+            update_fileds= [
+                "status",
+                "updated_at"
+            ]
+        )
+
+        OrderStatusHistory.objects.creat(
+            order = order,
+            status = new_status,
+            changed_by= request.user
+        )
+
+        return Response(
+            Orderserializer(
+                order,
+                context={
+                    "request" : request
+                }
+            ).data
+        )
+    
+    @action( detail = True, methods=["post"], url_path = "cancel")
+    def cancel(self,request,pk=None):
+        order = self.get_object()
+
+        allowed_statuses = [
+            "pendente",
+            "confirmado"
+        ]
+
+        if order.status not in allowed_statuses:
+            return Response(
+                {
+                    "detail":(
+                        "este pedido não pode "
+                        "mais ser cancelado."
+                    )
+                },
+                status = 400
+            )
+
+        order.status = "cancelado"
+
+        order.save(
+            update_fields =[
+                "status",
+                "updated_at"
+            ]
+        )
+
+        OrderStatusHistory.object.create(
+            order = order,
+            status = "cancelado",
+            changed_by = request.user
+        )
+
+        return Response(
+            OrderSerializer(
+                order,
+                context={
+                    "request": request
+                }
+            ).data
         )

@@ -1,34 +1,64 @@
+from decimal import Decimal
+
+from django.core.validators import MinValueValidator
 from django.db import models
 
 
 class StoreSettings(models.Model):
-    loja_nome = models.CharField(
+
+    name = models.CharField(
         max_length=255,
         default="Saboroso Pudim"
     )
 
-    email = models.EmailField(
-        blank=True
-    )
-
-    telefone = models.CharField(
+    phone = models.CharField(
         max_length=30,
         blank=True
     )
 
-    endereco = models.TextField(
+    whatsapp = models.CharField(
+        max_length=30,
+        blank=True
+    )
+
+    address = models.TextField(
         blank=True
     )
 
     taxa_entrega = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        default=0
+        default=Decimal("0.00"),
+        validators=[
+            MinValueValidator(0)
+        ]
     )
 
-    tempo_entrega = models.PositiveIntegerField(
-        default=60,
-        help_text="Tempo estimado de entrega em minutos."
+    pedido_minimo = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        validators=[
+            MinValueValidator(0)
+        ]
+    )
+
+    loja_aberta = models.BooleanField(
+        default=True
+    )
+
+    horario_abertura = models.TimeField(
+        null=True,
+        blank=True
+    )
+
+    horario_fechamento = models.TimeField(
+        null=True,
+        blank=True
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
     )
 
     updated_at = models.DateTimeField(
@@ -40,4 +70,4 @@ class StoreSettings(models.Model):
         verbose_name_plural = "Configurações da loja"
 
     def __str__(self):
-        return self.loja_nome
+        return self.name

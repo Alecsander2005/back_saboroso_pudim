@@ -6,13 +6,14 @@ from rest_framework import serializers
 from products.models import Product, ProductSize
 from store.models import StoreSettings
 
-from .models import Order, OrderItem
+from .models import Order, OrderItem, OrderStatusHistory
 
 
 class OrderItemSerializer(
     serializers.ModelSerializer
 ):
     subtotal = serializers.ReadOnlyField()
+    
 
     class Meta:
         model = OrderItem
@@ -34,6 +35,29 @@ class OrderItemSerializer(
             "price",
             "subtotal",
         ]
+    
+class OrderStatusHistorySerializer(serializers.ModelSerializer):
+    changed_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+
+        model = OrderStatusHistory
+
+        fields = [
+            "id",
+            "status",
+            "changed_by",
+            "changed_by_name",
+            "created_at",
+        ]
+
+        read_only_fields = fields
+
+    def get_changed_by_name(self, obj):
+        if not obj.changed_by:
+            return None
+
+        return obj.changed_by.get_full_name()
 
 
 class OrderSerializer(
@@ -42,6 +66,11 @@ class OrderSerializer(
     items = OrderItemSerializer(
         many=True,
         read_only=True
+    )
+
+    status_history = OrderStatusHistorySerializer(
+        many=True,
+        read_only = True
     )
 
     class Meta:
@@ -67,6 +96,7 @@ class OrderSerializer(
             "items",
             "created_at",
             "updated_at",
+            "status_history",
         ]
 
         read_only_fields = [
@@ -231,6 +261,28 @@ class OrderCreateSerializer(
             )
 
             total += item.subtotal
+            settings = StoreSettings.objects.first()
+
+        if settings:
+
+            if not settings.loja_aberta:
+                raise serializers.ValidationError({
+                    "detail": (
+                        "A loja está fechada "
+                        "no momento."
+                    )
+                })
+
+            if (
+                total < settings.pedido_minimo
+            ):
+                raise serializers.ValidationError({
+                    "detail": (
+                        "O pedido não atingiu "
+                        "o valor mínimo de "
+                        f"R$ {settings.pedido_minimo}."
+                    )
+                })
 
         delivery_fee = Decimal("0.00")
 
@@ -258,6 +310,12 @@ class OrderCreateSerializer(
                 "total",
                 "updated_at",
             ]
+        )
+
+        OrderStatusHistory.objects.create(
+            order = order,
+            status = order.status,
+            changed_by = order.user
         )
 
         return order
@@ -301,4 +359,41 @@ class OrderAdminUpdateSerializer(
                 )
             )
 
+        return value
+
+class OrderStatusUpdateSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(
+        choices = Order.STATUS_CHOICES
+    )
+
+    def validate_status(self, value):
+        order = self.context["order"]
+
+        current_status = order.status
+
+        allowed_statuses = (
+            Order.STATUS_flow.get(
+                current_status,
+                []
+            )
+        )
+
+        if value == current_status:
+            raise serializers.ValidationError(
+                (
+                    f"O status do pedido já está definido como "
+                    f"'{current_status}'."
+                )
+            )
+        if value not in allowed_statuses:
+            raise serializers.ValidationError(
+                (
+                f"não é possivel alterar"
+                f"o pedido de"
+                f"{current_status}"
+                f"para '{value}'"
+                )
+            )
+
+            
         return value

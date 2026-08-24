@@ -1,0 +1,55 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Saboroso Pudim | Login</title>
+<!-- 1. Tag static aplicada no CSS -->
+<link rel="stylesheet" href="{% static 'admin_panel/admin.css' %}">
+<style>
+body{min-height:100vh;display:grid;place-items:center;background:#fff8ef}
+.login{width:390px;max-width:92%;background:#fff;border:1px solid #eee;border-radius:16px;padding:28px;box-shadow:0 10px 40px rgba(0,0,0,.07)}
+.login img{display:block;width:90px;height:90px;object-fit:cover;border-radius:50%;margin:0 auto 18px}
+.login h1{text-align:center;font-size:21px;margin:0}.login p{text-align:center;color:#888;font-size:11px;margin:7px 0 22px}
+.login form{display:flex;flex-direction:column;gap:13px}.login label{font-size:11px;font-weight:bold;color:#555}.login input{display:block;width:100%;margin-top:6px;padding:11px;border:1px solid #ddd;border-radius:8px}
+.login button{margin-top:6px;border:0;background:#c97900;color:#fff;padding:12px;border-radius:8px;font-weight:bold}
+.login small{display:block;text-align:center;color:#aaa;margin-top:15px;font-size:9px}
+</style>
+</head>
+<body>
+<div class="login">
+<img src="{% static 'admin_panel/assets/logo.png' %}" alt="Saboroso Pudim">        
+<h1>Saboroso Pudim</h1>
+<p>Painel administrativo</p>
+<form id="loginForm">
+<label>E-mail<input id="email" type="email" required></label>
+<label>Senha<input id="password" type="password" required></label>
+<button type="submit">Entrar</button>
+</form>
+<small>Conectado à API Django</small>
+</div>
+<script>
+const API_BASE=localStorage.getItem("SABOROSO_API_BASE")||"http://localhost:8000/api";
+document.getElementById("loginForm").addEventListener("submit",async e=>{
+ e.preventDefault();
+ try{
+  // 3. 'username' enviado no lugar de 'email' (ajuste conforme seu backend)
+  const r=await fetch(API_BASE+"/auth/token/",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({username:email.value,password:password.value})
+  });
+  const data=await r.json();
+  if(!r.ok) throw new Error(data.detail||"Login inválido");
+  localStorage.setItem("access_token",data.access);
+  if(data.refresh)localStorage.setItem("refresh_token",data.refresh);
+  
+  // 2. Redirecionamento correto para uma rota do Django
+  location.href="/admin-panel/"; 
+ }catch(err){alert(err.message)}
+});
+</script>
+</body>
+</html>

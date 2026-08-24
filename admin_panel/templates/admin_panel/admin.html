@@ -1,0 +1,357 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Saboroso Pudim | Administração</title>
+  <link rel="stylesheet" href="static/admin_panel/admin.css">
+</head>
+<body>
+  <div id="toast" class="toast"></div>
+
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+      <img src="{% static 'admin_panel/assets/logo.png' %}" alt="Saboroso Pudim">        
+      <div>
+          <strong>Saboroso Pudim</strong>
+          <span>Painel administrativo</span>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-item active" data-page="dashboard"><span>▦</span> Dashboard</button>
+        <button class="nav-item" data-page="orders"><span>🛒</span> Pedidos</button>
+        <button class="nav-item" data-page="products"><span>🍮</span> Produtos</button>
+        <button class="nav-item" data-page="customers"><span>♙</span> Clientes</button>
+        <button class="nav-item" data-page="reports"><span>▥</span> Relatórios</button>
+        <button class="nav-item" data-page="settings"><span>⚙</span> Configurações</button>
+        <button class="nav-item" data-page="users"><span>♟</span> Usuários</button>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <div class="admin-mini">
+          <div class="avatar">A</div>
+          <div>
+            <strong id="currentUserName">Administrador</strong>
+            <span>Administrador</span>
+          </div>
+        </div>
+        <button class="logout-btn" id="logoutBtn">Sair</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="mobile-menu" id="mobileMenu">☰</button>
+          <div>
+            <h1 id="pageTitle">Dashboard</h1>
+            <p id="pageSubtitle">Visão geral da loja</p>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <div class="store-pill"><i></i><span id="storeStatusText">Loja aberta</span></div>
+          <button class="icon-btn" id="refreshBtn" title="Atualizar">↻</button>
+        </div>
+      </header>
+
+      <div class="content">
+
+        <!-- DASHBOARD -->
+        <section class="page active" id="page-dashboard">
+          <div class="page-heading">
+            <div>
+              <h2>Dashboard</h2>
+              <p>Acompanhe pedidos, faturamento e desempenho.</p>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <article class="stat-card"><div class="stat-icon">🛒</div><span>Pedidos</span><strong id="statOrders">0</strong><small>Pedidos registrados</small></article>
+            <article class="stat-card"><div class="stat-icon">R$</div><span>Faturamento</span><strong id="statRevenue">R$ 0,00</strong><small>Valor dos pedidos</small></article>
+            <article class="stat-card"><div class="stat-icon">⏱</div><span>Pendentes</span><strong id="statPending">0</strong><small>Aguardando ação</small></article>
+            <article class="stat-card"><div class="stat-icon">✓</div><span>Entregues</span><strong id="statDelivered">0</strong><small>Pedidos concluídos</small></article>
+          </div>
+
+          <div class="dashboard-grid">
+            <div class="panel">
+              <div class="panel-head"><h3>Pedidos recentes</h3><button class="text-btn" data-page-link="orders">Ver todos</button></div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>Pedido</th><th>Cliente</th><th>Data</th><th>Status</th><th>Total</th><th></th></tr></thead>
+                  <tbody id="recentOrdersBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-head"><h3>Status dos pedidos</h3></div>
+              <div class="status-list" id="statusSummary"></div>
+            </div>
+          </div>
+
+          <div class="three-grid">
+            <div class="panel">
+              <div class="panel-head"><h3>Método de entrega</h3></div>
+              <div id="deliverySummary" class="metric-list"></div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><h3>Informações rápidas</h3></div>
+              <div class="metric-list">
+                <div><span>Ticket médio</span><strong id="avgTicket">R$ 0,00</strong></div>
+                <div><span>Clientes ativos</span><strong id="activeCustomers">0</strong></div>
+                <div><span>Produtos ativos</span><strong id="activeProducts">0</strong></div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><h3>Ações rápidas</h3></div>
+              <div class="quick-grid">
+                <button data-page-link="orders">🛒 Pedidos</button>
+                <button data-page-link="products">🍮 Produtos</button>
+                <button data-page-link="customers">♙ Clientes</button>
+                <button data-page-link="settings">⚙ Loja</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ORDERS -->
+        <section class="page" id="page-orders">
+          <div class="page-heading">
+            <div><h2>Pedidos</h2><p>Consulte e atualize todos os pedidos.</p></div>
+          </div>
+
+          <div class="toolbar">
+            <input id="orderSearch" placeholder="Pesquisar por cliente, telefone ou ID...">
+            <select id="orderStatusFilter">
+              <option value="">Todos os status</option>
+              <option value="pendente">Pendente</option>
+              <option value="confirmado">Confirmado</option>
+              <option value="preparando">Preparando</option>
+              <option value="pronto">Pronto</option>
+              <option value="entregue">Entregue</option>
+              <option value="cancelado">Cancelado</option>
+            </select>
+            <select id="orderMethodFilter">
+              <option value="">Todos os métodos</option>
+              <option value="entrega">Entrega</option>
+              <option value="retirada">Retirada</option>
+            </select>
+            <input type="date" id="orderDateFilter">
+          </div>
+
+          <div class="panel">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>ID</th><th>Cliente</th><th>Data</th><th>Método</th><th>Status</th><th>Total</th><th>Ações</th></tr></thead>
+                <tbody id="ordersBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- PRODUCTS -->
+        <section class="page" id="page-products">
+          <div class="page-heading">
+            <div><h2>Produtos</h2><p>Gerencie catálogo, imagens, tamanhos e preços.</p></div>
+            <button class="primary-btn" id="newProductBtn">+ Novo produto</button>
+          </div>
+
+          <div class="toolbar">
+            <input id="productSearch" placeholder="Pesquisar produto...">
+          </div>
+
+          <div class="product-grid" id="productGrid"></div>
+        </section>
+
+        <!-- CUSTOMERS -->
+        <section class="page" id="page-customers">
+          <div class="page-heading">
+            <div><h2>Clientes</h2><p>Histórico e informações dos clientes.</p></div>
+          </div>
+
+          <div class="toolbar">
+            <input id="customerSearch" placeholder="Pesquisar nome, e-mail ou telefone...">
+          </div>
+
+          <div class="panel">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Cliente</th><th>E-mail</th><th>WhatsApp</th><th>Pedidos</th><th>Total gasto</th><th>Ações</th></tr></thead>
+                <tbody id="customersBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- REPORTS -->
+        <section class="page" id="page-reports">
+          <div class="page-heading">
+            <div><h2>Relatórios</h2><p>Indicadores de vendas e operação.</p></div>
+            <button class="secondary-btn" id="exportCsvBtn">Exportar CSV</button>
+          </div>
+
+          <div class="stats-grid">
+            <article class="stat-card"><span>Receita</span><strong id="reportRevenue">R$ 0,00</strong><small>Pedidos não cancelados</small></article>
+            <article class="stat-card"><span>Ticket médio</span><strong id="reportTicket">R$ 0,00</strong><small>Receita / pedidos</small></article>
+            <article class="stat-card"><span>Pedidos</span><strong id="reportOrders">0</strong><small>Total no período carregado</small></article>
+            <article class="stat-card"><span>Cancelados</span><strong id="reportCancelled">0</strong><small>Pedidos cancelados</small></article>
+          </div>
+
+          <div class="dashboard-grid">
+            <div class="panel">
+              <div class="panel-head"><h3>Pedidos por status</h3></div>
+              <div id="reportStatusBars" class="bars"></div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><h3>Entrega x retirada</h3></div>
+              <div id="reportMethodBars" class="bars"></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head"><h3>Produtos mais vendidos</h3></div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Produto</th><th>Quantidade</th><th>Faturamento</th></tr></thead>
+                <tbody id="topProductsBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- SETTINGS -->
+        <section class="page" id="page-settings">
+          <div class="page-heading">
+            <div><h2>Configurações</h2><p>Dados e regras da loja.</p></div>
+            <button class="primary-btn" id="saveSettingsBtn">Salvar alterações</button>
+          </div>
+
+          <div class="settings-grid">
+            <div class="panel">
+              <div class="panel-head"><h3>Informações da loja</h3></div>
+              <form id="settingsForm" class="form">
+                <label>Nome da loja<input id="setStoreName" required></label>
+                <label>E-mail<input id="setEmail" type="email"></label>
+                <label>Telefone<input id="setPhone"></label>
+                <label>Endereço<textarea id="setAddress"></textarea></label>
+                <label>Tempo estimado de entrega<input id="setDeliveryTime"></label>
+              </form>
+            </div>
+
+            <div class="panel">
+              <div class="panel-head"><h3>Operação</h3></div>
+              <div class="form">
+                <div class="toggle-row">
+                  <div><strong>Loja aberta</strong><small>Permitir novos pedidos</small></div>
+                  <label class="switch"><input type="checkbox" id="setStoreOpen" checked><span></span></label>
+                </div>
+                <label>Taxa de entrega<input id="setDeliveryFee" type="number" min="0" step="0.01"></label>
+                <label>Pedido mínimo<input id="setMinimumOrder" type="number" min="0" step="0.01"></label>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-head"><h3>Notificações</h3></div>
+              <div class="form">
+                <div class="toggle-row"><div><strong>Novos pedidos</strong><small>Notificar administrador</small></div><label class="switch"><input type="checkbox" id="notifyOrders" checked><span></span></label></div>
+                <div class="toggle-row"><div><strong>Status de pedido</strong><small>Atualizações operacionais</small></div><label class="switch"><input type="checkbox" id="notifyStatus" checked><span></span></label></div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-head"><h3>Segurança</h3></div>
+              <div class="form">
+                <button class="secondary-btn" id="changePasswordBtn">Alterar senha</button>
+                <p class="help">A autenticação deve ser feita pela API Django com JWT.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- USERS -->
+        <section class="page" id="page-users">
+          <div class="page-heading">
+            <div><h2>Usuários administrativos</h2><p>Controle de acesso ao painel.</p></div>
+            <button class="primary-btn" id="newUserBtn">+ Novo usuário</button>
+          </div>
+
+          <div class="panel">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Status</th><th>Ações</th></tr></thead>
+                <tbody id="usersBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- ORDER MODAL -->
+  <div class="modal" id="orderModal">
+    <div class="modal-card large">
+      <div class="modal-head"><h3 id="orderModalTitle">Pedido</h3><button class="close-btn" data-close="orderModal">×</button></div>
+      <div id="orderDetails"></div>
+      <div class="modal-actions">
+        <select id="modalOrderStatus">
+          <option value="pendente">Pendente</option>
+          <option value="confirmado">Confirmado</option>
+          <option value="preparando">Preparando</option>
+          <option value="pronto">Pronto</option>
+          <option value="entregue">Entregue</option>
+          <option value="cancelado">Cancelado</option>
+        </select>
+        <button class="primary-btn" id="saveOrderStatusBtn">Atualizar status</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRODUCT MODAL -->
+  <div class="modal" id="productModal">
+    <div class="modal-card">
+      <div class="modal-head"><h3 id="productModalTitle">Novo produto</h3><button class="close-btn" data-close="productModal">×</button></div>
+      <form id="productForm" class="form">
+        <input type="hidden" id="productId">
+        <label>Nome<input id="productName" required></label>
+        <label>Descrição<textarea id="productDescription" required></textarea></label>
+        <label>Imagem<input id="productImage" type="text" placeholder="URL da imagem"></label>
+        <div>
+          <div class="form-section-title">Tamanhos e preços</div>
+          <div id="sizesContainer"></div>
+          <button type="button" class="secondary-btn" id="addSizeBtn">+ Adicionar tamanho</button>
+        </div>
+        <button class="primary-btn" type="submit">Salvar produto</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- CUSTOMER MODAL -->
+  <div class="modal" id="customerModal">
+    <div class="modal-card large">
+      <div class="modal-head"><h3 id="customerModalTitle">Cliente</h3><button class="close-btn" data-close="customerModal">×</button></div>
+      <div id="customerDetails"></div>
+    </div>
+  </div>
+
+  <!-- USER MODAL -->
+  <div class="modal" id="userModal">
+    <div class="modal-card">
+      <div class="modal-head"><h3>Novo usuário</h3><button class="close-btn" data-close="userModal">×</button></div>
+      <form id="userForm" class="form">
+        <label>Nome<input id="userName" required></label>
+        <label>E-mail<input id="userEmail" type="email" required></label>
+        <label>Senha<input id="userPassword" type="password" required></label>
+        <label>Perfil<select id="userRole"><option value="admin">Administrador</option><option value="funcionario">Funcionário</option></select></label>
+        <button class="primary-btn" type="submit">Criar usuário</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>

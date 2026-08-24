@@ -18,6 +18,7 @@ class IsAdminUserType(
             request.user
             and request.user.is_authenticated
             and request.user.tipo_usuario == "admin"
+            and request.user.is_active
         )
 
 class IsOwnerAdmin(BasePermission):

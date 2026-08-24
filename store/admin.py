@@ -5,18 +5,21 @@ from .models import StoreSettings
 
 @admin.register(StoreSettings)
 class StoreSettingsAdmin(admin.ModelAdmin):
-    list_display = (
-        "loja_nome",
-        "email",
-        "telefone",
+
+    list_display = [
+        "name",
         "taxa_entrega",
-        "tempo_entrega",
+        "pedido_minimo",
+        "loja_aberta",
         "updated_at",
-    )
+    ]
 
-    readonly_fields = (
-        "updated_at",
-    )
+    list_filter = [
+        "loja_aberta",
+    ]
 
-    def has_add_permission(self, request):
-        return not StoreSettings.objects.exists()
+    search_fields = [
+        "name",
+        "phone",
+        "whatsapp",
+    ]

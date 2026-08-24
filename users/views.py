@@ -6,6 +6,7 @@ from rest_framework import (
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.decorators import action 
 
 from .serializers import (
     LoginSerializer,
@@ -80,6 +81,35 @@ class MeView(
 
     def get_object(self):
         return self.request.user
+
+    @action(detail = False, methods= ["get", "path"], url_path = "me", permission_classes = [permissions.IsAuthenticated])
+    def me(self,request):
+        if request.method == "GET":
+
+            serializer = UserSerializer(
+                    request.user
+            )
+
+            return Response(
+                serializer.data
+
+            )
+
+        serializer = UserSerializer(
+            request.user,
+            data = request.data,
+            partial = True
+            )
+
+        serializer.is_valid(
+            raise_exception= True
+        )
+
+        serializer.save()
+
+        return Response(
+            serializer.data
+        )
 
 class LogoutView(APIView):
     permission_classes = [

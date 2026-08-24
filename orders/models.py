@@ -140,6 +140,40 @@ class Order(models.Model):
     def __str__(self):
         return f"Pedido #{self.id} - {self.customer_name}"
 
+class OrderStatusHistory(models.Model):
+    
+    order = models.ForeignKey(
+        Order,
+        on_delete = models.CASCADE,
+        related_name="status_history"
+    )
+
+    status = models.CharField(
+        max_length=30,
+        choices = Order.STATUS_CHOICES,
+    )
+
+    changed_by = models.ForeignKey(
+        "users.User",
+        on_delete = models.SET_NULL,
+        null = True,
+        blank = True,
+        related_name = "Order_status_changes"
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add = True
+    )
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__ ( self):
+        return (
+            f"pedido #{self.order_id} - "
+            f"{self.status}"
+        )
+
 
 class OrderItem(models.Model):
     order = models.ForeignKey(

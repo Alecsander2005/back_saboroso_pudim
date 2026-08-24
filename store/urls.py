@@ -6,9 +6,9 @@ from .views import StoreSettingsViewSet
 router = DefaultRouter()
 
 router.register(
-    "settings",
+    "store",
     StoreSettingsViewSet,
-    basename="store-settings"
+    basename="store"
 )
 
 urlpatterns = router.urls
