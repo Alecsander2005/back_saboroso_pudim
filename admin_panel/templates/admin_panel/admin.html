@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Saboroso Pudim | Administração</title>
-  <link rel="stylesheet" href="static/admin_panel/admin.css">
+  <link rel="stylesheet" href="{% static 'admin_panel/admin.css' %}">
 </head>
 <body>
   <div id="toast" class="toast"></div>
@@ -130,6 +130,7 @@
               <option value="pendente">Pendente</option>
               <option value="confirmado">Confirmado</option>
               <option value="preparando">Preparando</option>
+              <option value="saiu_entrega">Saiu para entrega</option>
               <option value="pronto">Pronto</option>
               <option value="entregue">Entregue</option>
               <option value="cancelado">Cancelado</option>
@@ -302,6 +303,7 @@
           <option value="pendente">Pendente</option>
           <option value="confirmado">Confirmado</option>
           <option value="preparando">Preparando</option>
+          <option value="saiu_entrega">Saiu para entrega</option>
           <option value="pronto">Pronto</option>
           <option value="entregue">Entregue</option>
           <option value="cancelado">Cancelado</option>
@@ -319,7 +321,7 @@
         <input type="hidden" id="productId">
         <label>Nome<input id="productName" required></label>
         <label>Descrição<textarea id="productDescription" required></textarea></label>
-        <label>Imagem<input id="productImage" type="text" placeholder="URL da imagem"></label>
+        <label>Imagem<input id="productImage" type="file" accept="image/*"></label>
         <div>
           <div class="form-section-title">Tamanhos e preços</div>
           <div id="sizesContainer"></div>
@@ -346,12 +348,12 @@
         <label>Nome<input id="userName" required></label>
         <label>E-mail<input id="userEmail" type="email" required></label>
         <label>Senha<input id="userPassword" type="password" required></label>
-        <label>Perfil<select id="userRole"><option value="admin">Administrador</option><option value="funcionario">Funcionário</option></select></label>
+        <label>Perfil<select id="userRole"><option value="admin">Administrador</option><option value="cliente">Cliente</option></select></label>
         <button class="primary-btn" type="submit">Criar usuário</button>
       </form>
     </div>
   </div>
 
-  <script src="admin.js"></script>
+  <script src="{% static 'admin_panel/admin.js' %}"></script>
 </body>
 </html>

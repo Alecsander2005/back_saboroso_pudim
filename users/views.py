@@ -2,6 +2,7 @@ from rest_framework import (
     generics,
     permissions,
     status,
+    viewsets,
 )
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -9,11 +10,14 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.decorators import action 
 
 from .serializers import (
+    AdminUserSerializer,
     LoginSerializer,
     RegisterSerializer,
     UserSerializer,
     LogoutSerializer,
 )
+from .models import User
+from .permissions import IsAdminUserType
 
 
 class RegisterView(
@@ -110,6 +114,12 @@ class MeView(
         return Response(
             serializer.data
         )
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all().order_by("-date_joined")
+    serializer_class = AdminUserSerializer
+    permission_classes = [IsAdminUserType]
+
 
 class LogoutView(APIView):
     permission_classes = [

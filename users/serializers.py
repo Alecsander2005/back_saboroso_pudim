@@ -133,6 +133,36 @@ class LoginSerializer(
 
         return attrs
 
+class AdminUserSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, min_length=6, required=False)
+
+    class Meta:
+        model = User
+        fields = [
+            "id", "email", "nome_completo", "telefone", "tipo_usuario",
+            "password", "is_active", "is_staff", "is_superuser", "date_joined",
+        ]
+        read_only_fields = ["id", "is_staff", "is_superuser", "date_joined"]
+
+    def validate_email(self, value):
+        return value.lower().strip()
+
+    def create(self, validated_data):
+        password = validated_data.pop("password", None)
+        if not password:
+            raise serializers.ValidationError({"password": "Senha obrigatória."})
+        return User.objects.create_user(password=password, **validated_data)
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop("password", None)
+        for field, value in validated_data.items():
+            setattr(instance, field, value)
+        if password:
+            instance.set_password(password)
+        instance.save()
+        return instance
+
+
 class LogoutSerializer(serializers.Serializer):
     refresh = serializers.CharField()
 

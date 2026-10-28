@@ -35,19 +35,17 @@ const API_BASE=localStorage.getItem("SABOROSO_API_BASE")||"http://localhost:8000
 document.getElementById("loginForm").addEventListener("submit",async e=>{
  e.preventDefault();
  try{
-  // 3. 'username' enviado no lugar de 'email' (ajuste conforme seu backend)
   const r=await fetch(API_BASE+"/auth/token/",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({username:email.value,password:password.value})
+    body:JSON.stringify({email:email.value.trim().toLowerCase(),password:password.value})
   });
   const data=await r.json();
   if(!r.ok) throw new Error(data.detail||"Login inválido");
   localStorage.setItem("access_token",data.access);
   if(data.refresh)localStorage.setItem("refresh_token",data.refresh);
   
-  // 2. Redirecionamento correto para uma rota do Django
-  location.href="/admin-panel/"; 
+  location.href="/dashboard/";
  }catch(err){alert(err.message)}
 });
 </script>

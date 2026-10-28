@@ -14,10 +14,17 @@ class ProductAdmin(admin.ModelAdmin):
         "id",
         "name",
         "is_active",
+        "is_weekly",
     )
 
     list_filter = (
         "is_active",
+        "is_weekly",
+    )
+
+    fieldsets = (
+        (None, {"fields": ("name", "description", "image", "is_active", "is_weekly")}),
+        ("Tamanhos", {"classes": ("collapse",), "fields": ()}),
     )
 
     search_fields = (

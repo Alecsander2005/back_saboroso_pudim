@@ -1,16 +1,18 @@
 from django.urls import path
 
-from rest_framework_simplejwt.views import (
-    TokenRefreshView,
-)
+from rest_framework_simplejwt.views import TokenRefreshView
+from rest_framework.routers import DefaultRouter
 
 from .views import (
     LoginView,
     MeView,
     RegisterView,
     LogoutView,
+    UserViewSet,
 )
 
+router = DefaultRouter()
+router.register("", UserViewSet, basename="users")
 
 urlpatterns = [
     path(
@@ -41,4 +43,4 @@ urlpatterns = [
         LogoutView.as_view(),
         name = "logout",
     ),
-]
+] + router.urls

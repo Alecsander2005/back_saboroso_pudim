@@ -4,6 +4,7 @@ from rest_framework import (
     viewsets,
 )
 from rest_framework.response import Response
+from rest_framework.decorators import action
 
 from users.permissions import IsAdminUserType
 
@@ -79,6 +80,16 @@ class StoreSettingsViewSet(
         return Response(
             serializer.data
         )
+
+    @action(detail=False, methods=["patch"], url_path="current", permission_classes=[IsAdminUserType])
+    def current(self, request):
+        settings = StoreSettings.objects.first()
+        if not settings:
+            settings = StoreSettings.objects.create()
+        serializer = StoreSettingsSerializer(settings, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
 
     def create(self, request):
 

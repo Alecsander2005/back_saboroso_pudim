@@ -1,5 +1,6 @@
 from rest_framework import (
     permissions,
+    status,
     viewsets,
 )
 from rest_framework.decorators import action
@@ -44,7 +45,7 @@ class OrderViewSet(
 
         if self.action == "create":
             return [
-                permissions.IsAuthenticated()
+                permissions.AllowAny()
             ]
 
         if self.action in (
@@ -59,26 +60,35 @@ class OrderViewSet(
             IsAdminUserType()
         ]
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        response_serializer = OrderSerializer(
+            serializer.instance,
+            context=self.get_serializer_context(),
+        )
+        return Response(
+            response_serializer.data,
+            status=status.HTTP_201_CREATED,
+        )
+
     def get_queryset(self):
 
         queryset = super().get_queryset()
-
         user = self.request.user
 
-        if user.tipo_usuario == "admin":
+        if user.is_authenticated and user.tipo_usuario == "admin":
             return queryset
 
-        return queryset.filter(
-            user=user
-        )
+        if user.is_authenticated:
+            return queryset.filter(user=user)
 
-    def perform_create(
-        self,
-        serializer
-    ):
-        serializer.save(
-            user=self.request.user
-        )
+        return queryset.none()
+
+    def perform_create(self, serializer):
+        user = self.request.user if self.request.user.is_authenticated else None
+        serializer.save(user=user)
     
     @action( detail = True, methods= ["patch"], url_path = "status")
     def update_status(self,request,pk=None):
@@ -95,32 +105,19 @@ class OrderViewSet(
             raise_exception = True
         )
 
-        new_status = serializer.Validated_data[
-            "status"
-        ]
+        new_status = serializer.validated_data["status"]
 
-        order.statuis = new_status
+        order.status = new_status
+        order.save(update_fields=["status", "updated_at"])
 
-        order.save(
-            update_fileds= [
-                "status",
-                "updated_at"
-            ]
-        )
-
-        OrderStatusHistory.objects.creat(
-            order = order,
-            status = new_status,
-            changed_by= request.user
+        OrderStatusHistory.objects.create(
+            order=order,
+            status=new_status,
+            changed_by=request.user,
         )
 
         return Response(
-            Orderserializer(
-                order,
-                context={
-                    "request" : request
-                }
-            ).data
+            OrderSerializer(order, context={"request": request}).data
         )
     
     @action( detail = True, methods=["post"], url_path = "cancel")
@@ -152,17 +149,12 @@ class OrderViewSet(
             ]
         )
 
-        OrderStatusHistory.object.create(
-            order = order,
-            status = "cancelado",
-            changed_by = request.user
+        OrderStatusHistory.objects.create(
+            order=order,
+            status="cancelado",
+            changed_by=request.user,
         )
 
         return Response(
-            OrderSerializer(
-                order,
-                context={
-                    "request": request
-                }
-            ).data
+            OrderSerializer(order, context={"request": request}).data
         )

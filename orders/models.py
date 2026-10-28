@@ -5,12 +5,12 @@ from django.conf import settings
 class Order(models.Model):
     STATUS_CHOICES = [
         ("pendente", "Pendente"),
+        ("confirmado", "Confirmado"),
         ("preparando", "Preparando"),
-        ("pronto", "Pronto"),
-        ("entregue", "Entregue"),
+        ("pronto", "Pronto para entrega/retirada"),
+        ("entregue", "Entregue/Retirado"),
         ("cancelado", "Cancelado"),
-        ("saiu_entrega", "saiu para entrega"),
-        ("pronto", "pronto para retirada"),
+        ("saiu_entrega", "Saiu para entrega"),
     ]
 
     DELIVERY_METHOD_CHOICES = [
@@ -19,34 +19,14 @@ class Order(models.Model):
     ]
 
     STATUS_FLOW = {
-    "pendente": [
-        "confirmado",
-        "cancelado",
-    ],
-
-    "confirmado": [
-        "preparando",
-        "cancelado",
-    ],
-
-    "preparando": [
-        "saiu_entrega",
-        "pronto",
-        "cancelado",
-    ],
-
-    "saiu_entrega": [
-        "entregue",
-    ],
-
-    "pronto": [
-        "entregue",
-    ],
-
-    "entregue": [],
-
-    "cancelado": [],
-}
+        "pendente": ["confirmado", "preparando", "pronto", "entregue", "cancelado", "saiu_entrega"],
+        "confirmado": ["preparando", "pronto", "entregue", "cancelado", "saiu_entrega"],
+        "preparando": ["pronto", "entregue", "cancelado", "saiu_entrega"],
+        "pronto": ["entregue", "cancelado", "saiu_entrega"],
+        "saiu_entrega": ["entregue", "cancelado"],
+        "entregue": ["cancelado"],
+        "cancelado": [],
+    }
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,

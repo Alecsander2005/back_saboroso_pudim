@@ -35,7 +35,7 @@ function esc(value) {
 function statusLabel(status) {
   const labels = {
     pendente:"Pendente", confirmado:"Confirmado", preparando:"Preparando",
-    pronto:"Pronto", entregue:"Entregue", cancelado:"Cancelado"
+    pronto:"Pronto", saiu_entrega:"Saiu para entrega", entregue:"Entregue", cancelado:"Cancelado"
   };
   return labels[status] || status || "Sem status";
 }
@@ -56,7 +56,10 @@ function getToken() {
 }
 
 async function api(path, options = {}) {
-  const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+  const headers = { ...(options.headers || {}) };
+  if (!(options.body instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
 
@@ -73,7 +76,13 @@ async function api(path, options = {}) {
     let message = `Erro HTTP ${response.status}`;
     try {
       const body = await response.json();
-      message = body.detail || body.message || JSON.stringify(body);
+      if (typeof body.detail === "string") message = body.detail;
+      else if (body.message) message = body.message;
+      else if (typeof body === "object") {
+        message = Object.entries(body)
+          .map(([field, errors]) => `${field}: ${Array.isArray(errors) ? errors.join("; ") : String(errors)}`)
+          .join(" | ");
+      }
     } catch {}
     throw new Error(message);
   }
@@ -88,9 +97,10 @@ async function api(path, options = {}) {
   Se os paths finais do Django forem diferentes, altere somente este objeto.
 */
 const endpoints = {
-  orders: "/orders/",
-  products: "/products/",
-  settings: "/settings/",
+  orders: "/orders/orders/",
+  products: "/products/products/",
+  settings: "/store/store/",
+  settingsCurrent: "/store/store/current/",
   users: "/users/",
   customers: "/users/customers/"
 };
@@ -406,7 +416,7 @@ function openProductModal(product=null) {
   $("productId").value = product?.id || "";
   $("productName").value = product?.name || "";
   $("productDescription").value = product?.description || "";
-  $("productImage").value = product?.image || "";
+  $("productImage").value = "";
   const sizes = product?.sizes?.length ? product.sizes : [{label:"",price:""}];
   $("sizesContainer").innerHTML = "";
   sizes.forEach(addSizeRow);
@@ -434,19 +444,30 @@ async function saveProduct(event) {
     return {label:inputs[0].value.trim(),price:Number(inputs[1].value||0)};
   }).filter(s=>s.label && s.price > 0);
 
-  const payload = {
-    name:$("productName").value.trim(),
-    description:$("productDescription").value.trim(),
-    image:$("productImage").value.trim(),
-    sizes
-  };
+  const name = $("productName").value.trim();
+  if (!name) {
+    toast("Informe o nome do produto.");
+    return;
+  }
+  if (!sizes.length) {
+    toast("Adicione pelo menos um tamanho e preço válidos.");
+    return;
+  }
+
+  const payload = new FormData();
+  payload.append("name", name);
+  payload.append("description", $("productDescription").value.trim());
+  payload.append("is_active", "true");
+  payload.append("sizes", JSON.stringify(sizes));
+  const imageFile = $("productImage").files[0];
+  if (imageFile) payload.append("image", imageFile);
 
   try {
     if (id) {
-      await api(`${endpoints.products}${id}/`, {method:"PUT",body:JSON.stringify(payload)});
+      await api(`${endpoints.products}${id}/`, {method:"PATCH",body:payload});
       toast("Produto atualizado.");
     } else {
-      await api(endpoints.products,{method:"POST",body:JSON.stringify(payload)});
+      await api(endpoints.products,{method:"POST",body:payload});
       toast("Produto criado.");
     }
     $("productModal").classList.remove("show");
@@ -489,18 +510,16 @@ function openCustomer(index) {
 
 async function saveSettings() {
   const payload = {
-    loja_nome:$("setStoreName").value,
-    email:$("setEmail").value,
-    telefone:$("setPhone").value,
-    endereco:$("setAddress").value,
+    name:$("setStoreName").value,
+    phone:$("setPhone").value,
+    address:$("setAddress").value,
     taxa_entrega:Number($("setDeliveryFee").value||0),
-    tempo_entrega:$("setDeliveryTime").value,
     pedido_minimo:Number($("setMinimumOrder").value||0),
     loja_aberta:$("setStoreOpen").checked
   };
 
   try {
-    await api(endpoints.settings, {method:"PATCH",body:JSON.stringify(payload)});
+    await api(endpoints.settingsCurrent, {method:"PATCH",body:JSON.stringify(payload)});
     state.settings = {...state.settings,...payload};
     fillSettings();
     toast("Configurações salvas.");
@@ -579,6 +598,6 @@ $("customerSearch").addEventListener("input",renderCustomers);
 $("setStoreOpen").addEventListener("change",()=>{$("storeStatusText").textContent=$("setStoreOpen").checked?"Loja aberta":"Loja fechada"});
 document.querySelectorAll("[data-close]").forEach(btn=>btn.addEventListener("click",()=>$(btn.dataset.close).classList.remove("show")));
 document.querySelectorAll(".modal").forEach(modal=>modal.addEventListener("click",e=>{if(e.target===modal)modal.classList.remove("show")}));
-$("logoutBtn").addEventListener("click",()=>{localStorage.removeItem("access_token");localStorage.removeItem("token");location.href="login.html"});
+$("logoutBtn").addEventListener("click",()=>{localStorage.removeItem("access_token");localStorage.removeItem("token");localStorage.removeItem("refresh_token");location.href="/"});
 
 refreshAll().catch(console.error);

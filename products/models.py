@@ -22,6 +22,11 @@ class Product(models.Model):
         default=True
     )
 
+    is_weekly = models.BooleanField(
+        default=False,
+        help_text="Exibe este pudim na seção Pudim da Semana."
+    )
+
     created_at = models.DateTimeField(
         auto_now_add=True
     )

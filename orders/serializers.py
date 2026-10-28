@@ -148,6 +148,16 @@ class OrderCreateSerializer(
             "items",
         ]
 
+        extra_kwargs = {
+            "address": {"required": False, "allow_blank": True, "allow_null": True},
+            "address_rua": {"required": False, "allow_blank": True, "allow_null": True},
+            "address_bairro": {"required": False, "allow_blank": True, "allow_null": True},
+            "address_numero": {"required": False, "allow_blank": True, "allow_null": True},
+            "address_complemento": {"required": False, "allow_blank": True, "allow_null": True},
+            "address_referencia": {"required": False, "allow_blank": True, "allow_null": True},
+            "delivery_date": {"required": False, "allow_null": True},
+        }
+
     def validate_items(self, value):
         if not value:
             raise serializers.ValidationError(
@@ -164,31 +174,22 @@ class OrderCreateSerializer(
 
         if delivery_method == "entrega":
 
-            address = attrs.get(
-                "address"
-            )
+            address = attrs.get("address")
+            rua = attrs.get("address_rua")
+            bairro = attrs.get("address_bairro")
+            numero = attrs.get("address_numero")
 
-            rua = attrs.get(
-                "address_rua"
-            )
-
-            bairro = attrs.get(
-                "address_bairro"
-            )
-
-            numero = attrs.get(
-                "address_numero"
-            )
-
-            if not address and not (
-                rua and bairro and numero
-            ):
+            if not address and not (rua and bairro and numero):
                 raise serializers.ValidationError({
-                    "address": (
-                        "Informe o endereço "
-                        "para entrega."
-                    )
+                    "address": "Informe o endereço para entrega."
                 })
+        elif delivery_method == "retirada":
+            attrs["address"] = ""
+            attrs["address_rua"] = ""
+            attrs["address_bairro"] = ""
+            attrs["address_numero"] = ""
+            attrs["address_complemento"] = ""
+            attrs["address_referencia"] = ""
 
         return attrs
 
@@ -324,6 +325,8 @@ class OrderAdminUpdateSerializer(
     serializers.ModelSerializer
 ):
 
+    status = serializers.ChoiceField(choices=Order.STATUS_CHOICES)
+
     class Meta:
         model = Order
 
@@ -331,34 +334,7 @@ class OrderAdminUpdateSerializer(
             "status",
         ]
 
-    def validate_status(
-        self,
-        value
-    ):
-        order = self.instance
-
-        current_status = order.status
-
-        allowed_statuses = (
-            Order.STATUS_FLOW.get(
-                current_status,
-                []
-            )
-        )
-
-        if value == current_status:
-            return value
-
-        if value not in allowed_statuses:
-            raise serializers.ValidationError(
-                (
-                    f"Não é possível alterar "
-                    f"o pedido de "
-                    f"'{current_status}' "
-                    f"para '{value}'."
-                )
-            )
-
+    def validate_status(self, value):
         return value
 
 class OrderStatusUpdateSerializer(serializers.Serializer):
@@ -368,32 +344,8 @@ class OrderStatusUpdateSerializer(serializers.Serializer):
 
     def validate_status(self, value):
         order = self.context["order"]
-
-        current_status = order.status
-
-        allowed_statuses = (
-            Order.STATUS_flow.get(
-                current_status,
-                []
-            )
-        )
-
-        if value == current_status:
+        if value == order.status:
             raise serializers.ValidationError(
-                (
-                    f"O status do pedido já está definido como "
-                    f"'{current_status}'."
-                )
+                f"O status do pedido já está definido como '{order.status}'."
             )
-        if value not in allowed_statuses:
-            raise serializers.ValidationError(
-                (
-                f"não é possivel alterar"
-                f"o pedido de"
-                f"{current_status}"
-                f"para '{value}'"
-                )
-            )
-
-            
         return value
