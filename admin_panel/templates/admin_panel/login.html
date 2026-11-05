@@ -31,17 +31,17 @@ body{min-height:100vh;display:grid;place-items:center;background:#fff8ef}
 <small>Conectado à API Django</small>
 </div>
 <script>
-const API_BASE=localStorage.getItem("SABOROSO_API_BASE")||"http://localhost:8000/api";
+const API_BASE=localStorage.getItem("SABOROSO_API_BASE")||`${window.location.origin}/api`;
 document.getElementById("loginForm").addEventListener("submit",async e=>{
  e.preventDefault();
  try{
-  const r=await fetch(API_BASE+"/auth/token/",{
+  const r=await fetch(API_BASE+"/users/admin-login/",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
     body:JSON.stringify({email:email.value.trim().toLowerCase(),password:password.value})
   });
   const data=await r.json();
-  if(!r.ok) throw new Error(data.detail||"Login inválido");
+  if(!r.ok) throw new Error(data.detail||data.non_field_errors?.join(" ")||"Login inválido");
   localStorage.setItem("access_token",data.access);
   if(data.refresh)localStorage.setItem("refresh_token",data.refresh);
   

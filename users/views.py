@@ -6,10 +6,14 @@ from rest_framework import (
 )
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.decorators import action 
+from django.contrib.auth import login as auth_login
+from django.contrib.auth import logout as auth_logout
 
 from .serializers import (
+    AdminLoginSerializer,
     AdminUserSerializer,
     LoginSerializer,
     RegisterSerializer,
@@ -32,6 +36,8 @@ class RegisterView(
 
 class LoginView(APIView):
 
+    serializer_class = LoginSerializer
+
     permission_classes = [
         permissions.AllowAny
     ]
@@ -40,7 +46,7 @@ class LoginView(APIView):
         self,
         request
     ):
-        serializer = LoginSerializer(
+        serializer = self.serializer_class(
             data=request.data
         )
 
@@ -51,6 +57,8 @@ class LoginView(APIView):
         user = serializer.validated_data[
             "user"
         ]
+
+        self.on_login(request, user)
 
         refresh = RefreshToken.for_user(
             user
@@ -72,6 +80,16 @@ class LoginView(APIView):
             },
             status=status.HTTP_200_OK
         )
+
+    def on_login(self, request, user):
+        pass
+
+
+class AdminLoginView(LoginView):
+    serializer_class = AdminLoginSerializer
+
+    def on_login(self, request, user):
+        auth_login(request._request, user)
 
 
 class MeView(
@@ -120,6 +138,17 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = AdminUserSerializer
     permission_classes = [IsAdminUserType]
 
+    def perform_update(self, serializer):
+        if (
+            serializer.validated_data.get("is_active") is False
+            and serializer.instance.pk == self.request.user.pk
+        ):
+            raise ValidationError({
+                "is_active": "Você não pode desativar a conta que está usando."
+            })
+
+        serializer.save()
+
 
 class LogoutView(APIView):
     permission_classes = [
@@ -135,6 +164,7 @@ class LogoutView(APIView):
             raise_exception = True
         )
 
+        auth_logout(request._request)
         serializer.save()
 
         return Response({

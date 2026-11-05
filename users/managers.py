@@ -1,4 +1,5 @@
 from django.contrib.auth.base_user import BaseUserManager
+from .crypto import email_lookup, normalize_email
 
 
 class UserManager(BaseUserManager):
@@ -14,9 +15,8 @@ class UserManager(BaseUserManager):
                 "O usuário precisa ter um e-mail."
             )
 
-        email = self.normalize_email(
-            email
-        )
+        email = normalize_email(email)
+        extra_fields.setdefault("email_lookup", email_lookup(email))
 
         user = self.model(
             email=email,
@@ -29,6 +29,9 @@ class UserManager(BaseUserManager):
         )
 
         return user
+
+    def get_by_natural_key(self, username):
+        return self.get(email_lookup=email_lookup(normalize_email(username)))
 
     def create_superuser(
         self,

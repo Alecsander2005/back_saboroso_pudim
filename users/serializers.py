@@ -2,12 +2,27 @@ from django.contrib.auth import authenticate
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from .crypto import email_lookup, normalize_email
 from .models import User
+
+
+def validate_unique_user_email(value, instance=None):
+    value = normalize_email(value)
+    users = User.objects.filter(email_lookup=email_lookup(value))
+    if instance is not None:
+        users = users.exclude(pk=instance.pk)
+    if users.exists():
+        raise serializers.ValidationError(
+            "Este e-mail já está cadastrado."
+        )
+    return value
 
 
 class UserSerializer(
     serializers.ModelSerializer
 ):
+    email = serializers.EmailField(validators=[])
+
     class Meta:
         model = User
 
@@ -31,6 +46,9 @@ class UserSerializer(
             "is_superuser",
             "date_joined",
         ]
+
+    def validate_email(self, value):
+        return validate_unique_user_email(value, self.instance)
 
 
 class RegisterSerializer(
@@ -57,16 +75,7 @@ class RegisterSerializer(
         ]
 
     def validate_email(self, value):
-        value = value.lower().strip()
-
-        if User.objects.filter(
-            email=value
-        ).exists():
-            raise serializers.ValidationError(
-                "Este e-mail já está cadastrado."
-            )
-
-        return value
+        return validate_unique_user_email(value)
 
     def validate(self, attrs):
         if attrs["password"] != attrs[
@@ -106,9 +115,7 @@ class LoginSerializer(
     )
 
     def validate(self, attrs):
-        email = attrs[
-            "email"
-        ].lower().strip()
+        email = normalize_email(attrs["email"])
 
         password = attrs[
             "password"
@@ -133,7 +140,21 @@ class LoginSerializer(
 
         return attrs
 
+
+class AdminLoginSerializer(LoginSerializer):
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+
+        if attrs["user"].tipo_usuario != "admin":
+            raise serializers.ValidationError(
+                "Apenas administradores podem acessar o painel."
+            )
+
+        return attrs
+
+
 class AdminUserSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(validators=[])
     password = serializers.CharField(write_only=True, min_length=6, required=False)
 
     class Meta:
@@ -145,7 +166,7 @@ class AdminUserSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "is_staff", "is_superuser", "date_joined"]
 
     def validate_email(self, value):
-        return value.lower().strip()
+        return validate_unique_user_email(value, self.instance)
 
     def create(self, validated_data):
         password = validated_data.pop("password", None)
@@ -164,14 +185,17 @@ class AdminUserSerializer(serializers.ModelSerializer):
 
 
 class LogoutSerializer(serializers.Serializer):
-    refresh = serializers.CharField()
+    refresh = serializers.CharField(required=False)
 
     def validate(self, attrs):
-        self.token = attrs["refresh"]
+        self.token = attrs.get("refresh")
         return attrs
 
 
     def save(self, **kwargs):
+        if not self.token:
+            return
+
         try:
             token = RefreshToken(self.token)
 

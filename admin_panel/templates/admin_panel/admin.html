@@ -6,11 +6,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Saboroso Pudim | Administração</title>
   <link rel="stylesheet" href="{% static 'admin_panel/admin.css' %}">
+  <style>#adminApp[hidden] { display: none !important; }</style>
 </head>
 <body>
   <div id="toast" class="toast"></div>
 
-  <div class="app">
+  <div class="app" id="adminApp" hidden>
     <aside class="sidebar" id="sidebar">
       <div class="brand">
       <img src="{% static 'admin_panel/assets/logo.png' %}" alt="Saboroso Pudim">        

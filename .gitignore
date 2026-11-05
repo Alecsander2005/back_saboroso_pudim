@@ -30,6 +30,7 @@ dist/
 # Arquivos de ambiente
 .env
 .env.*
+!.env.example
 
 # =========================
 # Django

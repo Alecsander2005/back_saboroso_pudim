@@ -5,6 +5,7 @@ from rest_framework.routers import DefaultRouter
 
 from .views import (
     LoginView,
+    AdminLoginView,
     MeView,
     RegisterView,
     LogoutView,
@@ -25,6 +26,12 @@ urlpatterns = [
         "login/",
         LoginView.as_view(),
         name="login",
+    ),
+
+    path(
+        "admin-login/",
+        AdminLoginView.as_view(),
+        name="api-admin-login",
     ),
 
     path(

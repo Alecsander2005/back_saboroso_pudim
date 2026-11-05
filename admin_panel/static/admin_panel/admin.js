@@ -1,5 +1,5 @@
 
-const API_BASE = localStorage.getItem("SABOROSO_API_BASE") || "http://localhost:8000/api";
+const API_BASE = localStorage.getItem("SABOROSO_API_BASE") || `${window.location.origin}/api`;
 
 const state = {
   orders: [],
@@ -7,6 +7,7 @@ const state = {
   customers: [],
   settings: {},
   users: [],
+  currentUser: null,
   selectedOrderId: null
 };
 
@@ -55,6 +56,28 @@ function getToken() {
   return localStorage.getItem("access_token") || localStorage.getItem("token") || "";
 }
 
+function clearAuthAndRedirect() {
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("token");
+  localStorage.removeItem("refresh_token");
+  location.replace("/");
+}
+
+async function logoutPanel() {
+  const refresh = localStorage.getItem("refresh_token");
+
+  try {
+    await api("/users/logout/", {
+      method: "POST",
+      body: JSON.stringify(refresh ? { refresh } : {})
+    });
+  } catch (error) {
+    console.error("Falha ao encerrar a sessão no servidor:", error);
+  } finally {
+    clearAuthAndRedirect();
+  }
+}
+
 async function api(path, options = {}) {
   const headers = { ...(options.headers || {}) };
   if (!(options.body instanceof FormData)) {
@@ -66,9 +89,7 @@ async function api(path, options = {}) {
   const response = await fetch(`${API_BASE}${path}`, { ...options, headers });
 
   if (response.status === 401) {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("token");
-    toast("Sessão expirada. Faça login novamente.");
+    clearAuthAndRedirect();
     throw new Error("Não autenticado");
   }
 
@@ -351,7 +372,7 @@ function renderUsers() {
       <td>${esc(u.email || "-")}</td>
       <td>${esc(u.tipo_usuario || u.role || "admin")}</td>
       <td>${u.is_active === false ? '<span class="status status-cancelado">Inativo</span>' : '<span class="status status-entregue">Ativo</span>'}</td>
-      <td><button class="secondary-btn" onclick="toggleUser('${esc(u.id)}',${u.is_active === false})">${u.is_active === false ? "Ativar" : "Desativar"}</button></td>
+      <td><button class="secondary-btn" ${String(u.id) === String(state.currentUser?.id) ? "disabled" : ""} onclick="toggleUser('${esc(u.id)}',${u.is_active === false})">${String(u.id) === String(state.currentUser?.id) ? "Conta atual" : u.is_active === false ? "Ativar" : "Desativar"}</button></td>
     </tr>`).join("") : `<tr><td colspan="5">Nenhum usuário carregado.</td></tr>`;
 }
 
@@ -529,6 +550,11 @@ async function saveSettings() {
 }
 
 async function toggleUser(id, activate) {
+  if (!activate && String(id) === String(state.currentUser?.id)) {
+    toast("Você não pode desativar a conta que está usando.");
+    return;
+  }
+
   try {
     await api(`${endpoints.users}${id}/`,{method:"PATCH",body:JSON.stringify({is_active:activate})});
     await loadUsers();
@@ -577,6 +603,47 @@ async function refreshAll() {
   renderReports();
 }
 
+async function verifyAdminSession() {
+  const user = await api("/users/me/");
+
+  if (user.tipo_usuario !== "admin" || user.is_active !== true) {
+    clearAuthAndRedirect();
+    return false;
+  }
+
+  state.currentUser = user;
+  $("currentUserName").textContent = user.nome_completo || user.email;
+  return true;
+}
+
+async function initializePanel() {
+  if (!getToken()) {
+    clearAuthAndRedirect();
+    return;
+  }
+
+  try {
+    if (!(await verifyAdminSession())) return;
+  } catch (error) {
+    console.error("Falha ao validar acesso ao painel:", error);
+    alert("Não foi possível validar o acesso ao painel. Verifique a conexão e tente novamente.");
+    location.replace("/");
+    return;
+  }
+
+  $("adminApp").hidden = false;
+  await refreshAll();
+
+  setInterval(async () => {
+    try {
+      await verifyAdminSession();
+    } catch (error) {
+      console.error("Falha ao verificar a sessão do administrador:", error);
+      toast("Não foi possível confirmar sua sessão. Verifique a conexão.");
+    }
+  }, 30_000);
+}
+
 document.querySelectorAll(".nav-item").forEach(btn=>btn.addEventListener("click",()=>showPage(btn.dataset.page)));
 document.querySelectorAll("[data-page-link]").forEach(btn=>btn.addEventListener("click",()=>showPage(btn.dataset.pageLink)));
 $("mobileMenu").addEventListener("click",()=>$("sidebar").classList.toggle("open"));
@@ -598,6 +665,6 @@ $("customerSearch").addEventListener("input",renderCustomers);
 $("setStoreOpen").addEventListener("change",()=>{$("storeStatusText").textContent=$("setStoreOpen").checked?"Loja aberta":"Loja fechada"});
 document.querySelectorAll("[data-close]").forEach(btn=>btn.addEventListener("click",()=>$(btn.dataset.close).classList.remove("show")));
 document.querySelectorAll(".modal").forEach(modal=>modal.addEventListener("click",e=>{if(e.target===modal)modal.classList.remove("show")}));
-$("logoutBtn").addEventListener("click",()=>{localStorage.removeItem("access_token");localStorage.removeItem("token");localStorage.removeItem("refresh_token");location.href="/"});
+$("logoutBtn").addEventListener("click",logoutPanel);
 
-refreshAll().catch(console.error);
+initializePanel();
