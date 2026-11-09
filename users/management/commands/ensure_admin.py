@@ -12,6 +12,13 @@ from users.models import User
 class Command(BaseCommand):
     help = "Cria o administrador inicial a partir das variáveis de ambiente."
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--reset-password",
+            action="store_true",
+            help="Atualiza a senha do admin existente com INITIAL_ADMIN_PASSWORD.",
+        )
+
     def handle(self, *args, **options):
         email = os.getenv("INITIAL_ADMIN_EMAIL", "").strip()
         password = os.getenv("INITIAL_ADMIN_PASSWORD", "")
@@ -40,6 +47,20 @@ class Command(BaseCommand):
                 raise CommandError(
                     "INITIAL_ADMIN_EMAIL já pertence a uma conta que não é admin."
                 )
+
+            if options["reset_password"]:
+                try:
+                    validate_password(password, user=existing_user)
+                except ValidationError as error:
+                    raise CommandError("; ".join(error.messages)) from error
+
+                existing_user.set_password(password)
+                existing_user.save(update_fields=["password"])
+                self.stdout.write(
+                    self.style.SUCCESS("Senha do administrador atualizada.")
+                )
+                return
+
             self.stdout.write("Administrador inicial já existe; conta preservada.")
             return
 

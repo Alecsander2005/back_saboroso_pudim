@@ -72,6 +72,17 @@ comando de inicialização cria essa conta (ou preserva a existente) a cada
 inicialização. Se o e-mail já pertencer a uma conta não administradora, o
 serviço interrompe a inicialização em vez de alterar essa conta.
 
+Atualizar `INITIAL_ADMIN_PASSWORD` na Render não altera a senha já salva no
+banco. Para sincronizar a conta existente após mudar a variável, abra o Shell do
+serviço Render e execute:
+
+```sh
+python manage.py ensure_admin --reset-password
+```
+
+O comando exige a senha configurada no ambiente, valida sua força e atualiza o
+hash no banco. A inicialização normal continua preservando a senha existente.
+
 ## 4. Conferir o deploy
 
 - Veja **Events** e **Logs** no serviço da Render. O primeiro deploy deve

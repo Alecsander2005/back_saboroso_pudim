@@ -167,6 +167,32 @@ class EnsureAdminCommandTests(TestCase):
         self.assertTrue(user.check_password("BootstrapAdmin123!Unique"))
         self.assertEqual(User.objects.count(), 1)
 
+    @patch.dict(
+        os.environ,
+        {
+            "INITIAL_ADMIN_EMAIL": "bootstrap@example.com",
+            "INITIAL_ADMIN_PASSWORD": "UpdatedAdmin456!Unique",
+            "INITIAL_ADMIN_NAME": "Bootstrap Admin",
+        },
+    )
+    def test_password_is_only_changed_when_explicitly_requested(self):
+        user = User.objects.create_user(
+            email="bootstrap@example.com",
+            password="OriginalAdmin123!Unique",
+            nome_completo="Bootstrap Admin",
+            tipo_usuario="admin",
+            is_staff=True,
+        )
+
+        call_command("ensure_admin")
+        user.refresh_from_db()
+        self.assertTrue(user.check_password("OriginalAdmin123!Unique"))
+
+        call_command("ensure_admin", "--reset-password")
+        user.refresh_from_db()
+        self.assertTrue(user.check_password("UpdatedAdmin456!Unique"))
+        self.assertFalse(user.check_password("OriginalAdmin123!Unique"))
+
 
 @override_settings(EMAIL_ENCRYPTION_KEY=TEST_EMAIL_ENCRYPTION_KEY)
 class EmailEncryptionMigrationTests(TransactionTestCase):

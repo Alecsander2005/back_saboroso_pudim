@@ -1,6 +1,7 @@
 from pathlib import Path
 import os
 from datetime import timedelta 
+from urllib.parse import urlparse
 
 import dj_database_url
 from dotenv import load_dotenv
@@ -68,7 +69,7 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    origin.strip()
+    origin.strip().rstrip("/")
     for origin in os.getenv(
         "CORS_ALLOWED_ORIGINS",
         "http://localhost:3000",
@@ -110,11 +111,15 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
+database_url = os.getenv("DATABASE_URL", "")
+database_scheme = urlparse(database_url).scheme.lower()
+postgres_database = database_scheme in {"postgres", "postgresql"}
+
 DATABASES = {
     "default": dj_database_url.config(
         default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
         conn_max_age=600,
-        ssl_require=not DEBUG,
+        ssl_require=not DEBUG and postgres_database,
     )
 }
 
