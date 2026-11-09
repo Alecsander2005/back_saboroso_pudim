@@ -32,8 +32,9 @@ primeiro deploy; não é necessário executar SQL manualmente.
 
 3. Em **Environment**, crie as variáveis da tabela abaixo. Salve os valores
    sensíveis como secrets e não os coloque no Git.
-4. Crie o serviço. O `start.sh` aplica as migrações, cria o administrador
-   inicial, coleta os arquivos estáticos e inicia o Gunicorn.
+4. Crie o serviço. O `start.sh` aplica as migrações (adotando migrações iniciais
+   quando as tabelas correspondentes já existem), cria o administrador inicial,
+   coleta os arquivos estáticos e inicia o Gunicorn.
 
 ## 3. Variáveis de ambiente da Render
 

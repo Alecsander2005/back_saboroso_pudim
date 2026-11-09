@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-python manage.py migrate --noinput
+python manage.py migrate --fake-initial --noinput
 python manage.py ensure_admin
 python manage.py collectstatic --noinput
 
