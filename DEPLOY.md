@@ -33,8 +33,9 @@ primeiro deploy; não é necessário executar SQL manualmente.
 3. Em **Environment**, crie as variáveis da tabela abaixo. Salve os valores
    sensíveis como secrets e não os coloque no Git.
 4. Crie o serviço. O `start.sh` aplica as migrações (adotando migrações iniciais
-   quando as tabelas correspondentes já existem), cria o administrador inicial,
-   coleta os arquivos estáticos e inicia o Gunicorn.
+   quando as tabelas correspondentes já existem), cria o administrador inicial
+   ou sincroniza sua senha com `INITIAL_ADMIN_PASSWORD`, coleta os arquivos
+   estáticos e inicia o Gunicorn.
 
 ## 3. Variáveis de ambiente da Render
 
@@ -69,20 +70,15 @@ migrações e cria o administrador, operações que dependem de
 `EMAIL_ENCRYPTION_KEY`.
 
 `INITIAL_ADMIN_EMAIL` e `INITIAL_ADMIN_PASSWORD` são obrigatórios porque o
-comando de inicialização cria essa conta (ou preserva a existente) a cada
-inicialização. Se o e-mail já pertencer a uma conta não administradora, o
-serviço interrompe a inicialização em vez de alterar essa conta.
+comando de inicialização cria essa conta ou sincroniza a senha da conta admin
+existente com a variável em toda inicialização. Se o e-mail já pertencer a uma
+conta não administradora, o serviço interrompe a inicialização em vez de alterar
+essa conta. Se mudar a senha no painel, atualize também a variável na Render,
+pois a senha do ambiente volta a ser aplicada na próxima inicialização.
 
-Atualizar `INITIAL_ADMIN_PASSWORD` na Render não altera a senha já salva no
-banco. Para sincronizar a conta existente após mudar a variável, abra o Shell do
-serviço Render e execute:
-
-```sh
-python manage.py ensure_admin --reset-password
-```
-
-O comando exige a senha configurada no ambiente, valida sua força e atualiza o
-hash no banco. A inicialização normal continua preservando a senha existente.
+Ao atualizar `INITIAL_ADMIN_PASSWORD` na Render, faça um novo deploy/restart:
+o `start.sh` atualiza o hash da conta automaticamente, sem exigir acesso ao
+Shell da Render.
 
 ## 4. Conferir o deploy
 
