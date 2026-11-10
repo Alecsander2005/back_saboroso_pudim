@@ -2,7 +2,7 @@
 set -eu
 
 python manage.py migrate --fake-initial --noinput
-python manage.py ensure_admin --reset-password
+python manage.py ensure_admin 
 python manage.py collectstatic --noinput
 
 exec gunicorn config.wsgi:application \
